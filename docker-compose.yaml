@@ -1,0 +1,40 @@
+version: '3'
+services:
+  nginx: 
+    image: nginx:latest
+    restart: always
+    container_name: production_nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./www/flymytelloclient:/var/www/flymytelloclient
+      - ./www/certbot:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt
+    ports:
+      - 80:80
+      - 443:443
+
+  duckdns:
+    image: ghcr.io/linuxserver/duckdns
+    container_name: duckdns
+    env_file:
+      - duckdns.env
+
+  flymytello-server:
+    network_mode: host
+    build: ./flymytello-server-webrtc-go
+    restart: always
+    container_name: flymytello-server
+    env_file:
+      - certificate.env
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+
+  certbot:
+    build: ./certbot
+    restart: always
+    container_name: auto_cert_renewal
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - ./www/certbot:/var/www/certbot
+    depends_on:
+      - nginx
